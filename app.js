@@ -80,7 +80,7 @@
     const done = applied();
     show(
       `<div class="welcome">
-        <div class="diamond"><img src="assets/icons/prism.webp" alt="" /></div>
+        <div class="logo-art"><img src="assets/logo.webp" alt="${esc(C.game)}" width="760" height="868" decoding="async" fetchpriority="high" /></div>
         <p class="eyebrow">${esc(C.game)} · Tester program</p>
         <h1>Help us test <span>${esc(C.game)}</span> before anyone else.</h1>
         <p class="lead">We're looking for players who want early access, like finding bugs, or just want to have fun with new stuff first. It takes about two minutes to apply.</p>
@@ -293,7 +293,7 @@
         <p class="eyebrow">Live numbers</p>
         <h1>Tester applications</h1>
         <p class="lead">Everyone can see these. They only show totals, never names or answers.</p>
-        <div class="big-stat"><img src="assets/icons/prism.webp" alt="" /><div><b id="sTotal">…</b><span>applications so far</span></div></div>
+        <div class="big-stat"><img class="big-logo" src="assets/logo-icon.webp" alt="" /><div><b id="sTotal">…</b><span>applications so far</span></div></div>
         <div class="charts" id="charts">${CHOICE_QS.map((q) => `<div class="chart"><div class="chart-head">${icon(q.icon)}<h3>${esc(q.title)}</h3></div><div class="bars" data-q="${q.id}">${q.options.map((o) => `<div class="bar-row"><span class="bar-label">${esc(o)}</span><span class="bar"><i style="width:0%"></i></span><span class="bar-num">…</span></div>`).join("")}</div></div>`).join("")}</div>
         <div class="actions">${C.open && C.webhook && !applied() ? `<button class="btn btn-primary btn-lg" data-start>Apply now</button>` : ""}<button class="btn btn-ghost btn-lg" data-go="welcome">Back to start</button></div>
       </div>`,
