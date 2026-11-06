@@ -196,3 +196,5 @@ textarea.field { min-height: 130px; line-height: 1.5; font-size: 17px; }
 /* logo sits straight, only a gentle float */
 .logo-art { rotate: 0deg; animation: floatY 6s ease-in-out infinite; }
 @keyframes floatY { 50% { transform: translateY(-10px); } }
+
+.accepted-line { margin-top: 12px; font-size: 14.5px; color: var(--text-2); }

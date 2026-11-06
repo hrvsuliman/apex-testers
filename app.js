@@ -26,13 +26,15 @@
   ];
   const CHOICE_QS = Q.filter((q) => q.type === "choice");
 
-  /* ── Shared counters (abacus) for the public stats. The real site writes to the real ones. ── */
-  const API = "https://abacus.jasoncameron.dev";
-  const NS = /\.github\.io$/.test(location.hostname) ? "apex-testers" : "apex-testers-dev";
-  const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const key = (q, opt) => `${q}-${slug(opt)}`;
-  const getCount = (k) => fetch(`${API}/get/${NS}/${k}`).then((r) => (r.ok ? r.json() : { value: 0 })).then((d) => d.value || 0).catch(() => null);
-  const hit = (k) => fetch(`${API}/hit/${NS}/${k}`).catch(() => {});
+  /* ── Google Sheet backend (see google-script/Code.gs) ── */
+  // POST as text/plain so the browser doesn't need a CORS preflight (Apps Script can't answer those)
+  const api = (body) =>
+    fetch(C.api, { method: "POST", body: JSON.stringify(body) }).then((r) => r.json());
+  let statsCache = null;
+  const getStats = () =>
+    !C.api
+      ? Promise.resolve(null)
+      : (statsCache ||= fetch(`${C.api}?action=stats`).then((r) => r.json()).then((d) => (d.ok ? d.stats : null)).catch(() => null));
 
   /* ── Small helpers ───────────────────────────────────── */
   let toastT;
@@ -89,7 +91,7 @@
           ${
             !C.open
               ? `<p class="note">Applications are closed right now. Keep an eye on the Discord for the next round.</p>`
-              : !C.webhook
+              : !C.api
                 ? `<p class="note">Applications open very soon. Join the Discord so you don't miss it.</p>`
               : done
                 ? `<p class="note">You already applied as <b>${esc(done.roblox)}</b>. We'll message you on Discord if you get picked.</p>`
@@ -99,7 +101,7 @@
         </div>
       </div>`,
       dir,
-      () => getCount("total").then((n) => { const el = $("#appCount"); if (el) el.textContent = n == null ? "–" : n.toLocaleString("en-US"); })
+      () => getStats().then((st) => { const el = $("#appCount"); if (el) el.textContent = st ? st.total.toLocaleString("en-US") : "–"; })
     );
   };
 
@@ -201,42 +203,19 @@
     setProgress(1);
     show(`<div class="sending"><div class="spinner"></div><h2>Sending your application…</h2></div>`, 1);
     if (Date.now() - startedAt < 8000) { await new Promise((r) => setTimeout(r, 1200)); return fail("That was super fast. Take a second and try again."); }
-    if (!C.webhook) return fail("Applications aren't connected yet. Please try again later or DM us on Discord.");
-    const a = answers;
-    const field = (name, value, inline = false) => ({ name, value: clip(String(value || "–")), inline });
-    const payload = {
-      username: `${C.game} Applications`,
-      allowed_mentions: { parse: [] },
-      embeds: [
-        {
-          title: `New tester application: ${a.roblox}`,
-          url: `https://www.roblox.com/search/users?keyword=${encodeURIComponent(a.roblox)}`,
-          color: 0x3b6cff,
-          fields: [
-            field("Roblox", a.roblox, true),
-            field("Discord", `@${a.discord}`, true),
-            field("Focus", a.focus, true),
-            field("Active on Roblox", a.activity, true),
-            field("Hours per week", a.hours, true),
-            field("Found Apex via", a.found, true),
-            field("What they like about Apex", a.likes),
-            field("Tested before?", a.experience === "Yes" ? `Yes: ${a.experienceWhere || ""}` : "No"),
-            field("What they expect from Apex", a.expect),
-          ],
-          timestamp: new Date().toISOString(),
-        },
-      ],
-    };
+    if (!C.api) return fail("Applications aren't connected yet. Please try again later or DM us on Discord.");
+    let res;
     try {
-      const r = await fetch(`${C.webhook}?wait=true`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (!r.ok) throw new Error(`Discord said ${r.status}`);
+      res = await api({ action: "apply", application: { ...answers, website: "" } });
     } catch (err) {
       return fail("Couldn't send it right now. Your answers are saved, so just try again in a minute.");
     }
-    // Public stats: count the application and each multiple-choice answer
-    hit("total");
-    CHOICE_QS.forEach((q) => a[q.id] && hit(key(q.id, a[q.id])));
-    mem.set("apexApplied", { roblox: a.roblox, at: Date.now() });
+    if (!res.ok) {
+      if (res.duplicate) mem.set("apexApplied", { roblox: answers.roblox, at: Date.now() });
+      return fail(res.error || "Something went wrong. Try again in a minute.");
+    }
+    statsCache = null;
+    mem.set("apexApplied", { roblox: answers.roblox, at: Date.now() });
     localStorage.removeItem("apexDraft");
     done();
   };
@@ -294,22 +273,25 @@
         <h1>Tester applications</h1>
         <p class="lead">Everyone can see these. They only show totals, never names or answers.</p>
         <div class="big-stat"><img class="big-logo" src="assets/logo-icon.webp" alt="" /><div><b id="sTotal">…</b><span>applications so far</span></div></div>
+        <p class="accepted-line" id="sAccepted"></p>
         <div class="charts" id="charts">${CHOICE_QS.map((q) => `<div class="chart"><div class="chart-head">${icon(q.icon)}<h3>${esc(q.title)}</h3></div><div class="bars" data-q="${q.id}">${q.options.map((o) => `<div class="bar-row"><span class="bar-label">${esc(o)}</span><span class="bar"><i style="width:0%"></i></span><span class="bar-num">…</span></div>`).join("")}</div></div>`).join("")}</div>
-        <div class="actions">${C.open && C.webhook && !applied() ? `<button class="btn btn-primary btn-lg" data-start>Apply now</button>` : ""}<button class="btn btn-ghost btn-lg" data-go="welcome">Back to start</button></div>
+        <div class="actions">${C.open && C.api && !applied() ? `<button class="btn btn-primary btn-lg" data-start>Apply now</button>` : ""}<button class="btn btn-ghost btn-lg" data-go="welcome">Back to start</button></div>
       </div>`,
       1
     );
-    const [total, ...rest] = await Promise.all([getCount("total"), ...CHOICE_QS.flatMap((q) => q.options.map((o) => getCount(key(q.id, o))))]);
+    const st = await getStats();
     const tEl = $("#sTotal");
     if (!tEl) return;
-    if (total == null) { tEl.textContent = "–"; return toast("Couldn't load the stats right now."); }
+    if (!st) { tEl.textContent = "–"; return C.api && toast("Couldn't load the stats right now."); }
+    const total = st.total;
+    const acc = $("#sAccepted");
+    if (acc && st.status) acc.textContent = `${st.status.Accepted || 0} accepted so far, ${st.status.Pending || 0} still waiting for a reply.`;
     // count up
     const t0 = performance.now();
     const tick = (t) => { const k = Math.min(1, (t - t0) / 900); tEl.textContent = Math.round(total * (1 - Math.pow(1 - k, 3))).toLocaleString("en-US"); if (k < 1) requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
-    let i = 0;
     CHOICE_QS.forEach((q) => {
-      const counts = q.options.map(() => rest[i++] || 0);
+      const counts = q.options.map((o) => (st.choices[q.id] || {})[o] || 0);
       const sum = counts.reduce((a, b) => a + b, 0);
       const rows = $$(`.bars[data-q="${q.id}"] .bar-row`);
       const top = Math.max(...counts);

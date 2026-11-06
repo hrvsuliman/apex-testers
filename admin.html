@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Applications · Apex Admin</title>
+  <link rel="icon" href="assets/favicon.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=1793979952" />
+  <link rel="stylesheet" href="admin.css?v=1793979952" />
+</head>
+<body class="admin">
+  <div class="bg" aria-hidden="true"></div>
+
+  <!-- Sign in -->
+  <section class="login" id="login" hidden>
+    <form class="login-card" id="loginForm">
+      <img class="login-logo" src="assets/logo-icon.webp" alt="" />
+      <h1>Apex applications</h1>
+      <p class="muted">Enter the admin password you set in the Google Sheet script.</p>
+      <input class="field" name="password" type="password" placeholder="Password" autocomplete="current-password" required />
+      <label class="check"><input type="checkbox" name="remember" checked /> Keep me signed in on this device</label>
+      <p class="error" id="loginError" hidden></p>
+      <button class="btn btn-primary btn-lg" type="submit" id="loginBtn">Sign in</button>
+      <p class="muted small" id="notConnected" hidden>The site isn't connected to the Google Sheet yet. Add the script URL to <code>config.js</code> first (see SETUP.md).</p>
+    </form>
+  </section>
+
+  <!-- Dashboard -->
+  <div class="dash" id="dash" hidden>
+    <header class="top">
+      <a class="brand" href="./"><img src="assets/logo-icon.webp" alt="" /><span>Apex Strikers</span><em>Admin</em></a>
+      <nav>
+        <button class="top-link" id="refreshBtn">Refresh</button>
+        <button class="top-link" id="exportBtn">Export CSV</button>
+        <button class="top-link" id="logoutBtn">Sign out</button>
+      </nav>
+    </header>
+
+    <main class="dash-main">
+      <div class="tiles" id="tiles"></div>
+      <div class="toolbar">
+        <div class="filters" id="filters" role="tablist"></div>
+        <label class="search"><input id="search" type="search" placeholder="Search Roblox or Discord name…" autocomplete="off" /></label>
+        <select id="sort" aria-label="Sort">
+          <option value="new">Newest first</option>
+          <option value="old">Oldest first</option>
+        </select>
+      </div>
+      <div class="apps" id="apps"></div>
+      <p class="empty" id="empty" hidden>No applications here yet.</p>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="config.js?v=1793979952"></script>
+  <script src="admin.js?v=1793979952"></script>
+</body>
+</html>

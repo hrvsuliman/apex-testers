@@ -4,11 +4,9 @@
 window.APEX = {
   game: "Apex Strikers",
 
-  // Discord webhook that receives the applications.
-  // Discord → your server → Server Settings → Integrations → Webhooks → New Webhook,
-  // pick a private channel (e.g. #tester-applications), Copy Webhook URL, paste it here.
-  // If someone ever spams it, delete the webhook in Discord and paste a new one here.
-  webhook: "",
+  // Web app URL of the Google Sheet script (see SETUP.md). Applications are saved there.
+  // The Discord webhook and admin password live inside that script, so they're never public.
+  api: "",
 
   discordInvite: "https://discord.gg/3KuKZCT6Xp",
 
