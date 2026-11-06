@@ -193,3 +193,6 @@ textarea.field { min-height: 130px; line-height: 1.5; font-size: 17px; }
 .screen.in-right, .screen.in-left, .screen.out-left, .screen.out-right { filter: none; }
 .screen { transition: opacity 0.4s var(--ease), transform 0.5s var(--ease); will-change: opacity, transform; }
 .top { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(245, 245, 247, 0.94); }
+/* logo sits straight, only a gentle float */
+.logo-art { rotate: 0deg; animation: floatY 6s ease-in-out infinite; }
+@keyframes floatY { 50% { transform: translateY(-10px); } }
