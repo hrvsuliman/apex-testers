@@ -75,6 +75,66 @@
     if (p != null) $("#progressBar").style.width = `${Math.round(p * 100)}%`;
   };
 
+  /* ── Your application status (accepted / declined / waiting) ── */
+  const lookup = (roblox, discord) =>
+    fetch(`${C.api}?action=status&roblox=${encodeURIComponent(roblox)}&discord=${encodeURIComponent(discord.replace(/^@/, ""))}`)
+      .then((r) => r.json())
+      .catch(() => ({ ok: false }));
+  const statusBox = (res, name) => {
+    if (!res.ok && res.error === "Unknown action") return `<div class="my-status st-none"><img src="assets/icons/star.webp" alt="" /><p>You applied as <b>${esc(name)}</b>. We'll message you on Discord when we've looked at it.</p></div>`;
+    if (!res.ok) return `<div class="my-status st-none"><p>Couldn't check your application right now. Try again in a bit.</p></div>`;
+    if (!res.found) return `<div class="my-status st-none"><img src="assets/icons/question-medal.webp" alt="" /><h3>We couldn't find that application</h3><p>Double-check the spelling of both names. They have to match exactly what you applied with.</p></div>`;
+    const who = esc(res.roblox || name);
+    if (res.status === "Accepted")
+      return `<div class="my-status st-accepted"><img src="assets/icons/prism.webp" alt="" /><h3>Congrats, my diamond!</h3>
+        <p><b>${who}</b>, you got accepted as an ${esc(C.game)} tester. We'll DM you on Discord with the invite to the test server, so keep your DMs open.</p>
+        <a class="btn btn-primary discord-btn" href="${esc(C.discordInvite)}" target="_blank" rel="noopener">${DISCORD_SVG}Open the Discord</a></div>`;
+    if (res.status === "Declined")
+      return `<div class="my-status st-declined"><img src="assets/icons/heart.webp" alt="" /><h3>Not this time, ${who}</h3>
+        <p>Thanks a lot for applying, it really means a lot. We couldn't take everyone in this round, but there will be more. Stay in the Discord so you hear about the next one.</p></div>`;
+    return `<div class="my-status st-pending"><img src="assets/icons/star.webp" alt="" /><h3>Your application is waiting</h3>
+      <p>It's in the queue, ${who}, and we haven't gotten to it yet. Come back to this page later, your answer will show up right here.</p></div>`;
+  };
+  // Shows the result and makes a moment of it the first time someone sees a new answer
+  const revealStatus = (el, res, name) => {
+    el.innerHTML = statusBox(res, name);
+    el.classList.add("in");
+    if (!res.ok || !res.found) return;
+    const seen = mem.get("apexSeenStatus");
+    if (seen !== res.status) {
+      if (res.status === "Accepted") celebrate();
+      if (seen && res.status !== "Pending") toast("Your application got an answer!");
+      mem.set("apexSeenStatus", res.status);
+    }
+  };
+  const checkScreen = (prefill = {}) => {
+    setProgress(null);
+    show(
+      `<form class="question check" novalidate>
+        <div class="q-head"><img class="q-ico" src="assets/icons/question-medal.webp" alt="" /><h2>Check your application</h2></div>
+        <p class="hint">Enter the same names you applied with.</p>
+        <input class="field" name="roblox" placeholder="Roblox username" autocomplete="off" spellcheck="false" value="${esc(prefill.roblox || "")}" />
+        <input class="field" name="discord" placeholder="Discord username" autocomplete="off" spellcheck="false" value="${esc(prefill.discord || "")}" />
+        <div class="nav-row"><button type="button" class="btn btn-ghost" data-go="welcome">Back</button><button type="submit" class="btn btn-primary">Check</button></div>
+        <div class="status-slot" id="checkResult"></div>
+      </form>`,
+      1,
+      (el) => {
+        const form = $("form", el);
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const roblox = form.roblox.value.trim(), discord = form.discord.value.trim();
+          const slot = $("#checkResult", el);
+          if (!roblox || !discord) { slot.innerHTML = `<p class="error">Enter both names.</p>`; return; }
+          slot.innerHTML = `<div class="spinner"></div>`;
+          const res = await lookup(roblox, discord);
+          if (res.ok && res.found) mem.set("apexApplied", { roblox: res.roblox || roblox, discord: discord.replace(/^@/, ""), at: Date.now() });
+          revealStatus(slot, res, roblox);
+        });
+      }
+    );
+  };
+
   /* ── Welcome ─────────────────────────────────────────── */
   const applied = () => mem.get("apexApplied");
   const welcome = (dir = -1) => {
@@ -87,6 +147,7 @@
         <h1>Help us test <span>${esc(C.game)}</span> before anyone else.</h1>
         <p class="lead">We're looking for players who want early access, like finding bugs, or just want to have fun with new stuff first. It takes about two minutes to apply.</p>
         <div class="count-pill"><span class="live"></span><b id="appCount">…</b> people applied so far</div>
+        ${done && C.api ? `<div class="status-slot" id="myStatus"><div class="my-status st-none"><div class="spinner"></div><p>Checking your application…</p></div></div>` : ""}
         <div class="actions">
           ${
             !C.open
@@ -94,14 +155,25 @@
               : !C.api
                 ? `<p class="note">Applications open very soon. Join the Discord so you don't miss it.</p>`
               : done
-                ? `<p class="note">You already applied as <b>${esc(done.roblox)}</b>. We'll message you on Discord if you get picked.</p>`
+                ? ""
                 : `<button class="btn btn-primary btn-lg" data-start>Start application</button>`
           }
           <button class="btn btn-ghost btn-lg" data-go="stats">See the stats</button>
         </div>
+        ${C.api ? `<button class="check-link" data-check>${done ? "Not you? Check a different application" : "Already applied? Check your status"}</button>` : ""}
       </div>`,
       dir,
-      () => getStats().then((st) => { const el = $("#appCount"); if (el) el.textContent = st ? st.total.toLocaleString("en-US") : "–"; })
+      (el) => {
+        getStats().then((st) => { const c = $("#appCount"); if (c) c.textContent = st ? st.total.toLocaleString("en-US") : "–"; });
+        if (!done || !C.api) return;
+        const slot = $("#myStatus", el);
+        if (!done.discord) {
+          // applied before we stored Discord names: ask once
+          slot.innerHTML = `<div class="my-status st-none"><p>You applied as <b>${esc(done.roblox)}</b>.</p><button class="btn btn-primary" data-check>Check my status</button></div>`;
+          return;
+        }
+        lookup(done.roblox, done.discord).then((res) => revealStatus(slot, res, done.roblox));
+      }
     );
   };
 
@@ -211,11 +283,12 @@
       return fail("Couldn't send it right now. Your answers are saved, so just try again in a minute.");
     }
     if (!res.ok) {
-      if (res.duplicate) mem.set("apexApplied", { roblox: answers.roblox, at: Date.now() });
+      if (res.duplicate) mem.set("apexApplied", { roblox: answers.roblox, discord: answers.discord, at: Date.now() });
       return fail(res.error || "Something went wrong. Try again in a minute.");
     }
     statsCache = null;
-    mem.set("apexApplied", { roblox: answers.roblox, at: Date.now() });
+    mem.set("apexApplied", { roblox: answers.roblox, discord: answers.discord, at: Date.now() });
+    mem.set("apexSeenStatus", "Pending");
     localStorage.removeItem("apexDraft");
     done();
   };
@@ -311,6 +384,7 @@
   document.addEventListener("click", (e) => {
     const go = e.target.closest("[data-go]");
     if (go) { e.preventDefault(); go.dataset.go === "stats" ? stats() : welcome(); return; }
+    if (e.target.closest("[data-check]")) { checkScreen(applied() || {}); return; }
     if (e.target.closest("[data-start]")) {
       answers = mem.get("apexDraft") || {};
       startedAt = Date.now();

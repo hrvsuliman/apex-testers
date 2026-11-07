@@ -67,6 +67,15 @@ function stats_() {
 function doGet(e) {
   const action = (e && e.parameter && e.parameter.action) || "stats";
   if (action === "stats") return json_({ ok: true, stats: stats_() });
+  if (action === "status") {
+    // An applicant checks their own status. Both names have to match, so nobody can look up someone else.
+    const rb = String(e.parameter.roblox || "").trim().toLowerCase();
+    const dc = String(e.parameter.discord || "").trim().toLowerCase().replace(/^@/, "");
+    if (!rb || !dc) return json_({ ok: false, error: "Enter both names." });
+    const r = rows_().find((x) => String(x.roblox).toLowerCase() === rb && String(x.discord).toLowerCase() === dc);
+    if (!r) return json_({ ok: true, found: false });
+    return json_({ ok: true, found: true, status: r.status || "Pending", roblox: r.roblox });
+  }
   return json_({ ok: false, error: "Unknown action" });
 }
 

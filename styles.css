@@ -210,3 +210,22 @@ textarea.field { min-height: 130px; line-height: 1.5; font-size: 17px; }
 .st-pen b { color: #b45309; }
 .st-dec { box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.3); background: #fef2f2; }
 .st-dec b { color: #b91c1c; }
+
+/* Your application status */
+.status-slot { margin-top: 26px; }
+.my-status { display: grid; justify-items: center; gap: 8px; max-width: 520px; margin: 0 auto; padding: 22px 24px; border-radius: 22px; text-align: center; background: #fff; box-shadow: inset 0 0 0 1px var(--border); animation: statusIn 0.6s var(--spring) both; }
+@keyframes statusIn { from { opacity: 0; transform: translateY(12px) scale(0.97); } }
+.my-status img { width: 64px; height: 64px; object-fit: contain; filter: drop-shadow(0 8px 12px rgba(20, 20, 40, 0.2)); }
+.my-status h3 { font-size: 22px; letter-spacing: -0.025em; }
+.my-status p { font-size: 15.5px; color: var(--text-2); }
+.my-status .btn { margin-top: 8px; }
+.my-status .spinner { width: 28px; height: 28px; margin: 0; }
+.st-accepted { background: linear-gradient(160deg, #f5f3ff, #eef6ff); box-shadow: inset 0 0 0 1.5px rgba(139, 92, 246, 0.35), 0 24px 50px -28px rgba(99, 70, 220, 0.6); }
+.st-accepted h3 { background: linear-gradient(100deg, #3b6cff, #8b5cf6 55%, #ec4899); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 26px; }
+.st-accepted img { width: 84px; height: 84px; animation: floatY 4s ease-in-out infinite; }
+.st-declined { background: #fff7f7; box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.25); }
+.st-pending { background: #fffbeb; box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3); }
+.check-link { display: block; margin: 18px auto 0; font-size: 14.5px; color: #0a5fd8; }
+.check-link:hover { text-decoration: underline; }
+.check .field + .field { margin-top: 10px; }
+.check .status-slot .spinner { margin: 10px auto 0; }
