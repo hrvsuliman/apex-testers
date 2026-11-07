@@ -107,7 +107,7 @@ function doPost(e) {
       if (dupe) return json_({ ok: false, error: "You've already applied. We'll message you on Discord if you get picked.", duplicate: true });
 
       const row = {
-        id: Utilities.getUuid().slice(0, 8),
+        id: "a" + Utilities.getUuid().slice(0, 7), // starts with a letter so Sheets never turns it into a number
         submittedAt: new Date(),
         status: "Pending",
         roblox, discord,
@@ -132,7 +132,7 @@ function doPost(e) {
 
   if (body.action === "update") {
     const sh = sheet_();
-    const r = rows_().find((x) => x.id === body.id);
+    const r = rows_().find((x) => String(x.id) === String(body.id));
     if (!r) return json_({ ok: false, error: "Application not found." });
     if (body.status && STATUSES.indexOf(body.status) !== -1) {
       sh.getRange(r._row, COLS.indexOf("status") + 1).setValue(body.status);
@@ -144,7 +144,7 @@ function doPost(e) {
   }
 
   if (body.action === "delete") {
-    const r = rows_().find((x) => x.id === body.id);
+    const r = rows_().find((x) => String(x.id) === String(body.id));
     if (!r) return json_({ ok: false, error: "Application not found." });
     sheet_().deleteRow(r._row);
     return json_({ ok: true });

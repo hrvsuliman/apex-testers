@@ -41,6 +41,10 @@
     return new Date(iso).toLocaleDateString();
   };
   const statusOf = (a) => a.status || "Pending";
+  // Google Sheets turns ids like "48213907" or "12e45678" into numbers, so always compare as text
+  // and send the id back to the sheet exactly the way the sheet gave it to us.
+  const key = (id) => String(id);
+  const byKey = (id) => apps.find((x) => key(x.id) === key(id));
 
   /* ── sign in ─────────────────────────────────────────── */
   const showLogin = (err) => {
@@ -109,9 +113,9 @@
   const chip = (label, v) => (v ? `<span class="info"><em>${label}</em>${esc(v)}</span>` : "");
   const card = (a) => {
     const st = statusOf(a);
-    const isOpen = open.has(a.id);
+    const isOpen = open.has(key(a.id));
     return `
-    <article class="app st-${st.toLowerCase()}${isOpen ? " open" : ""}" data-id="${esc(a.id)}">
+    <article class="app st-${st.toLowerCase()}${isOpen ? " open" : ""}" data-id="${esc(key(a.id))}">
       <header class="app-head" data-toggle>
         <div class="who">
           <b>${esc(a.roblox)}</b>
@@ -143,14 +147,14 @@
 
   /* ── actions ─────────────────────────────────────────── */
   const setStatus = async (id, status) => {
-    const a = apps.find((x) => x.id === id);
+    const a = byKey(id);
     if (!a) return;
     const before = a.status;
     a.status = status; // optimistic
     render();
     toast(status === "Pending" ? `${a.roblox} moved back to pending.` : `${status} ${a.roblox}.`);
     try {
-      const res = await api({ action: "update", id, status });
+      const res = await api({ action: "update", id: a.id, status });
       if (!res.ok) throw new Error(res.error);
     } catch (err) {
       a.status = before;
@@ -177,11 +181,11 @@
       return;
     }
     if (e.target.closest("[data-delete]")) {
-      const a = apps.find((x) => x.id === id);
-      if (!confirm(`Delete ${a.roblox}'s application? This removes the row from the sheet.`)) return;
-      apps = apps.filter((x) => x.id !== id);
+      const a = byKey(id);
+      if (!a || !confirm(`Delete ${a.roblox}'s application? This removes the row from the sheet.`)) return;
+      apps = apps.filter((x) => x !== a);
       render();
-      const res = await api({ action: "delete", id }).catch(() => ({ ok: false }));
+      const res = await api({ action: "delete", id: a.id }).catch(() => ({ ok: false }));
       if (!res.ok) { toast("Couldn't delete it, refreshing."); refresh(); } else toast("Deleted.");
     }
   });
@@ -189,9 +193,10 @@
   document.addEventListener("change", async (e) => {
     if (!e.target.matches("[data-note]")) return;
     const id = e.target.closest(".app").dataset.id;
-    const a = apps.find((x) => x.id === id);
+    const a = byKey(id);
+    if (!a) return;
     a.note = e.target.value;
-    const res = await api({ action: "update", id, note: a.note }).catch(() => ({ ok: false }));
+    const res = await api({ action: "update", id: a.id, note: a.note }).catch(() => ({ ok: false }));
     toast(res.ok ? "Note saved." : "Couldn't save the note.");
   });
   let qT;
