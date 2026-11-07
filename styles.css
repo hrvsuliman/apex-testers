@@ -197,4 +197,16 @@ textarea.field { min-height: 130px; line-height: 1.5; font-size: 17px; }
 .logo-art { rotate: 0deg; animation: floatY 6s ease-in-out infinite; }
 @keyframes floatY { 50% { transform: translateY(-10px); } }
 
-.accepted-line { margin-top: 12px; font-size: 14.5px; color: var(--text-2); }
+
+/* Accepted / waiting / declined */
+.status-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.status { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px 8px 10px; border-radius: 999px; font-size: 14.5px; background: #fff; box-shadow: inset 0 0 0 1px var(--border); }
+.status img { width: 26px; height: 26px; object-fit: contain; }
+.status b { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.status span { color: var(--text-2); }
+.st-acc { box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.35); background: #f0fdf4; }
+.st-acc b { color: #15803d; }
+.st-pen { box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35); background: #fffbeb; }
+.st-pen b { color: #b45309; }
+.st-dec { box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.3); background: #fef2f2; }
+.st-dec b { color: #b91c1c; }

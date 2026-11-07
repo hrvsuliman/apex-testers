@@ -273,7 +273,11 @@
         <h1>Tester applications</h1>
         <p class="lead">Everyone can see these. They only show totals, never names or answers.</p>
         <div class="big-stat"><img class="big-logo" src="assets/logo-icon.webp" alt="" /><div><b id="sTotal">…</b><span>applications so far</span></div></div>
-        <p class="accepted-line" id="sAccepted"></p>
+        <div class="status-row" id="sStatus">
+          <div class="status st-acc"><img src="assets/icons/trophy.webp" alt="" /><b data-st="Accepted">…</b><span>accepted</span></div>
+          <div class="status st-pen"><img src="assets/icons/question-medal.webp" alt="" /><b data-st="Pending">…</b><span>waiting</span></div>
+          <div class="status st-dec"><img src="assets/icons/document.webp" alt="" /><b data-st="Declined">…</b><span>declined</span></div>
+        </div>
         <div class="charts" id="charts">${CHOICE_QS.map((q) => `<div class="chart"><div class="chart-head">${icon(q.icon)}<h3>${esc(q.title)}</h3></div><div class="bars" data-q="${q.id}">${q.options.map((o) => `<div class="bar-row"><span class="bar-label">${esc(o)}</span><span class="bar"><i style="width:0%"></i></span><span class="bar-num">…</span></div>`).join("")}</div></div>`).join("")}</div>
         <div class="actions">${C.open && C.api && !applied() ? `<button class="btn btn-primary btn-lg" data-start>Apply now</button>` : ""}<button class="btn btn-ghost btn-lg" data-go="welcome">Back to start</button></div>
       </div>`,
@@ -284,8 +288,7 @@
     if (!tEl) return;
     if (!st) { tEl.textContent = "–"; return C.api && toast("Couldn't load the stats right now."); }
     const total = st.total;
-    const acc = $("#sAccepted");
-    if (acc && st.status) acc.textContent = `${st.status.Accepted || 0} accepted so far, ${st.status.Pending || 0} still waiting for a reply.`;
+    $$("#sStatus [data-st]").forEach((el) => (el.textContent = ((st.status || {})[el.dataset.st] || 0).toLocaleString("en-US")));
     // count up
     const t0 = performance.now();
     const tick = (t) => { const k = Math.min(1, (t - t0) / 900); tEl.textContent = Math.round(total * (1 - Math.pow(1 - k, 3))).toLocaleString("en-US"); if (k < 1) requestAnimationFrame(tick); };
